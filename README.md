@@ -61,7 +61,7 @@ MONGO_URI=mongodb://localhost:27017/StudentDB
 Server runs at: http://localhost:5000
 
 
-# 📖 Auto-generated Fields
-### ✅ rollNo: sequential roll number auto-assigned based on number of students in the class
+## 📖 Auto-generated Fields
+ ✅ rollNo: sequential roll number auto-assigned based on number of students in the class
 
-### ✅ regNo: globally unique registration number assigned to every student (e.g. REG001, REG002...)
+ ✅ regNo: globally unique registration number assigned to every student (e.g. REG001, REG002...)
