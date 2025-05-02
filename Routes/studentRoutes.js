@@ -4,7 +4,7 @@ import { Class } from "../Models/Class.js";
 
 const studentRoutes = express.Router();
 
-// Adding a new Student
+//       Create a new student
 studentRoutes.post("/add", async (req, res) => {
   try {
     const { name, mobileNo, standard, division } = req.body;
@@ -14,20 +14,32 @@ studentRoutes.post("/add", async (req, res) => {
     }
     
 
+    // Find class by standard and division
     const foundClass = await Class.findOne({ standard, division });
     if (!foundClass) {
       return res.status(404).json({ message: "Class not found. Cannot assign student." });
     }
+
+
       
       const studentCountInClass = await Student.countDocuments({ classId: foundClass._id });
-
-      // Auto-generate roll num
+      //    Auto-generate roll number start from   1 
       const newRollNo = studentCountInClass + 1;
 
-      const studentCount = await Student.countDocuments();
-const newRegNo = "REG" + String(studentCount + 1).padStart(3, "0");
+     // Find last regno 
+     const lastStudent = await Student.findOne().sort({ regNo: -1 });
 
-    
+      // Creating new reg no 
+    let newRegNo;
+    if (lastStudent && lastStudent.regNo) {
+      const lastRegNoNum = parseInt(lastStudent.regNo.slice(3));
+      newRegNo = "REG" + String(lastRegNoNum + 1).padStart(3, "0");
+    } else {
+      newRegNo = "REG001";
+    }
+      
+
+ 
     const newStudent = new Student({
       regNo: newRegNo,
       name,
@@ -47,18 +59,19 @@ const newRegNo = "REG" + String(studentCount + 1).padStart(3, "0");
 });
 
 
-// Finding all students in a Standard
 studentRoutes.get("/getAllStudents",async (req,res)=>{
   try{
     const { standard } =req.body;
 
-       
+       // Find all classes with this standard
        const classesInStandard = await Class.find({ standard });
 
+      
        if (classesInStandard.length === 0) {
          return res.status(404).json({ message: "No classes found for this standard" });
        }
    
+       // Extract all classIds  
        const classIds = classesInStandard.map(c => c._id);
    
        const students = await Student.find({ classId: { $in: classIds } }).populate("classId");
@@ -72,19 +85,18 @@ studentRoutes.get("/getAllStudents",async (req,res)=>{
   }
 })
 
-
-// Finding all students in a Divinsion
 studentRoutes.get("/getClassStudents", async (req, res) => {
   try {
     const { standard, division } = req.body;
 
-   // Look for the class by standard and division
+    // Find the class by standard and division
     const foundClass = await Class.findOne({ standard, division });
 
     if (!foundClass) {
       return res.status(404).json({ message: "Class not found" });
     }
 
+    // Find students in this class
     const students = await Student.find({ classId: foundClass._id }).populate("classId");
 
     if (students.length === 0) {
@@ -99,20 +111,20 @@ studentRoutes.get("/getClassStudents", async (req, res) => {
   }
 });
 
-// Updating Standard and Division of a student with Reg No
+
 studentRoutes.put("/updateClass/:regNo", async (req, res) => {
   try {
     const { regNo } = req.params;
     const { standard, division } = req.body;
 
-    // Checking  standard and division
+    // Find the  class by standard and division
     const newClass = await Class.findOne({ standard, division });
 
     if (!newClass) {
       return res.status(404).json({ message: "Target class not found" });
     }
 
-    
+   
     const updatedStudent = await Student.findOneAndUpdate(
       { regNo: regNo }, 
       { classId: newClass._id }, 
@@ -132,13 +144,13 @@ studentRoutes.put("/updateClass/:regNo", async (req, res) => {
   }
 });
 
-// Remove a student using Reg no
+
 studentRoutes.delete("/delete/:regNo", async (req, res) => {
   try {
     const { regNo } = req.params;
 
-    // Find and delete student
-    const deletedStudent = await Student.findOneAndDelete(regNo);
+    // Find and delete student using regno
+    const deletedStudent = await Student.findOneAndDelete({ regNo: regNo });
 
     if (!deletedStudent) {
       return res.status(404).json({ message: "Student not found" });
